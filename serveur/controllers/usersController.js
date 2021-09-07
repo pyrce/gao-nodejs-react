@@ -8,14 +8,17 @@ const { Op } = require("sequelize");
 
 
 controller.liste=(req,res)=>{
-
-    client.findAll({
-[Op.or]:{
-    nomClient:"%"+req.body.nomClient+"%",
-    prenomClient:"%"+req.body.nomClient+"%"
+console.log(req.body);
+    client.findOne({
+  where:{[Op.or]: {
+    nomClient: [req.body.nomClient]
+      ,
+      prenomClient: 
+        [req.body.nomClient]
+   
+  }
 }
-
-    }).then(users=>{
+      }).then(users=>{
 
         res.json(users);
     })
