@@ -4,6 +4,8 @@ import axios from 'axios';
 import DeleteIcon from '@material-ui/icons/Delete';
 import Add from '@material-ui/icons/Add';
 import { IconButton,Button } from '@material-ui/core';
+import Autocomplete from '@material-ui/lab/Autocomplete';
+import TextField from '@material-ui/core/TextField';
 import '../css/app.css';
 const customStyles = {
   content : {
@@ -28,7 +30,7 @@ class Attributions extends Component {
           clients:[],
            show: false,
            ajoutClient:false,
-           loading: true};
+           loading: true,idclient:0};
         
         this.delete=this.delete.bind(this);
         this.content=this.content.bind(this);
@@ -37,15 +39,16 @@ class Attributions extends Component {
         this.populate=this.populate.bind(this);
         this.attribuer=this.attribuer.bind(this);
         this.ajoutClient=this.ajoutClient.bind(this);
+        this.handleSelect=this.handleSelect.bind(this);
     }
 
-    delete(e){
+    delete(id){
         
            axios({
             method: 'delete',
             url: 'http://localhost:3000/attribution/delete',
             data: {
-              id: e.target.dataset.id
+              id:id
             }
           }).then(msg=>{
             this.props.action()
@@ -62,7 +65,14 @@ class Attributions extends Component {
             });
             console.log(this.state.attributions);
     }
-    attribuer(){
+
+    handleSelect(event, value) {
+  
+       this.setState({ idclient: event.target.dataset.idclient });
+      
+  }
+    attribuer(event){
+      event.preventDefault();
       let inputValue = document.getElementById("clients").value;
       let option = document.querySelector(`option[value="${inputValue}"]`).dataset["idclient"];
 
@@ -84,15 +94,19 @@ class Attributions extends Component {
     }
 populate(e){
 
+if(e.target.value.length>2){
   axios.post(`http://localhost:3000/users`,{nomClient:e.target.value}).then(data=>
   {
-   var t=[];
-   // eslint-disable-next-line
-    data.data.map(d=>{
-      t.push(<option data-idclient={d.id} value={d.nomClient+"-"+d.prenomClient} key={d.id}>{d.nomClient+"-"+d.prenomClient}</option>)
-    })
-    this.setState({clients:t});
+
+ let client=data.data;
+ var t=[];
+
+   t.push(<option data-idclient={client.id} value={client.nomClient+"-"+client.prenomClient} key={client.id}>{client.nomClient+"-"+client.prenomClient}</option>)
+ 
+ this.setState({clients:t});
+    // this.setState({ defaultProps: { ...this.state.defaultProps, options: client } });
    } )
+  }
 }
 ajoutClient(){
   axios({ 
@@ -119,9 +133,9 @@ var nom=[];
 // eslint-disable-next-line
 this.state.heures.map(h=>{
 if( this.state.attributions[h] ){
-  nom.push(<div className="horaires"> <span className="w-5" key={h}> {h} h </span><span className="w-7"> {  this.state.attributions[h].nomClient+" "+ this.state.attributions[h].prenomClient }  </span><IconButton className="btn btn-warning" onClick={this.delete}  data-param="delete" data-id={this.state.attributions[h].id}> <DeleteIcon /> </IconButton></div>)
+  nom.push(<div className="horaires"> <span className="w-5" key={h}> {h} h </span><span className="w-7"> {  this.state.attributions[h].nomClient+" "+ this.state.attributions[h].prenomClient }  </span><IconButton className="btn btn-warning" onClick={()=>this.delete(this.state.attributions[h].id)}  data-param="delete" data-id={this.state.attributions[h].id}> <DeleteIcon /> </IconButton></div>)
 }else  {
-  nom.push(   <div className="horaires"><span  className="w-5" key={h}>{h} h</span> <span className="w-7"></span> <IconButton  className="btn btn-primary" onClick={this.openModal} data-horaire={h}   data-pc={posteId} data-param="ajout"> <Add/> </IconButton> </div>)
+  nom.push(   <div className="horaires"><span  className="w-5" key={h}>{h} h</span> <span className="w-7"></span> <IconButton  className="btn btn-primary" onClick={()=>this.openModal({h},{posteId})} data-horaire={h}   data-pc={posteId} data-param="ajout"> <Add/> </IconButton> </div>)
 }
 
 } )
@@ -130,9 +144,9 @@ if( this.state.attributions[h] ){
         return nom;
     }
 
-      openModal (e) {
+      openModal (horaire,posteid) {
 
-        this.setState({ show: true,heure: e.target.dataset.horaire,pc:e.target.dataset.pc });
+        this.setState({ show: true,heure: horaire.h,pc:posteid.posteId });
    
       };
     
@@ -147,21 +161,25 @@ if( this.state.attributions[h] ){
             <div className="attrcontent">
 
             <Modal isOpen={this.state.show} style={customStyles} onRequestClose={this.closeModal}>
-          <Button onClick={this.closeModal}>close</Button>
-          <input type="text" id="clients" list="nom" onInput={this.populate} />
+    
+         
+            <input type="text" id="clients" list="nom" onKeyDown={this.populate} onChange={this.handleSelect}/>
+          <datalist id="nom" >
+{this.state.clients}
+          </datalist>
           <Button onClick={ (e)=>{this.setState({ajoutClient:true})  }} variant="outlined" color="primary">ajout client</Button>
-
+ <Button onClick={this.closeModal}>close</Button>
 { this.state.ajoutClient===true ? 
           <section>
             <input type="text" onChange={(e=>{this.setState({nomClient:e.target.value}) })}/> <br/>
             <input type="text" onChange={(e=>{this.setState({prenomClient:e.target.value}) })}/>  <br/>
             <button onClick={this.ajoutClient}>ajout client</button>
           </section>
-          :<div>      <datalist id="nom" >
-{this.state.clients}
-          </datalist>
-          <Button onClick={this.attribuer} variant="outlined" color="secondary">Attribuer</Button></div>  
+          :<div>   
+
+          <Button type="submit" variant="outlined" color="secondary" onClick={this.attribuer}>Attribuer</Button></div>  
     }
+
         </Modal>
 
                   
